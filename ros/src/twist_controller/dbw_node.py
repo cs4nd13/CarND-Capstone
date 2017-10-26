@@ -186,12 +186,12 @@ class DBWNode(object):
         self.angular_velocity_filter.filt(yaw)
         self.velocity_filter.filt(x)
 
-        if msg.header.seq%5 == 0:
-            ts = msg.header.stamp.secs + 1.e-9*msg.header.stamp.nsecs
-            # ts seems to always be 0.
-            yaw_per_meter = self.angular_velocity_filter.get()/self.velocity_filter.get()
-            # rospy.loginfo("cv %d  %f %f  %f %f  %f", seq, self.velocity_filter.get(), x, self.angular_velocity_filter.get(), yaw, yaw_per_meter)
-        pass
+        # if msg.header.seq%5 == 0:
+        #     ts = msg.header.stamp.secs + 1.e-9*msg.header.stamp.nsecs
+        #     # ts seems to always be 0.
+        #     yaw_per_meter = self.angular_velocity_filter.get()/self.velocity_filter.get()
+        #     # rospy.loginfo("cv %d  %f %f  %f %f  %f", seq, self.velocity_filter.get(), x, self.angular_velocity_filter.get(), yaw, yaw_per_meter)
+        # pass
 
 
     def loop(self):

@@ -529,9 +529,7 @@ class WaypointUpdater(object):
 
 
     def accelerate(self, next_pt, end_pt):
-        '''
-        Used by start_moving state but is not working yet
-        '''
+        
         if len(self.accel_wps) > 10:
             return self.accel_wps[1:]
         
