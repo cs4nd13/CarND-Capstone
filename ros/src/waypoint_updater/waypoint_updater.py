@@ -148,9 +148,8 @@ class WaypointUpdater(object):
         # u = 0.70 = friction coefficient
         # t = 4.0 = brake time
         # g = 9.8 = force due to earth gravity
-        #self.stopping_distance = (self.velocity * 4.0) + (self.velocity**2 / (2. * 0.70 * 9.8))
-        #self.stopping_distance = (self.velocity**2 / (2. * 0.70 * 9.8))
-        self.stopping_distance = (self.velocity**2 / (2. * MAX_DECEL))
+        self.stopping_distance = (self.velocity * 4.0) + (self.velocity**2 / (2. * 0.70 * 9.8))
+        #self.stopping_distance = (self.velocity**2 / (2. * MAX_DECEL))
 
 
         ## get stop lines positions from paramenter
@@ -198,7 +197,7 @@ class WaypointUpdater(object):
             if self.next_pt == next_tl-1:
                 next_tl += 1
             #olane.waypoints=self.wps[self.next_pt:next_tl-1][:]
-            waypoints = self.decelerate_slow(self.next_pt, next_tl, self.current_velocity * 0.7)  # deceleraate upto 70% of current velocity
+            waypoints = self.decelerate_slow(self.next_pt, next_tl, self.current_velocity * 0.5)  # deceleraate upto 70% of current velocity
             olane.waypoints = waypoints
             self.decel_wps = waypoints
             # Handle case where we are near the end of the track;
@@ -330,7 +329,7 @@ class WaypointUpdater(object):
         Copy of the function used in waypoing loader to reduce 
         the velocity of the car when apporaching a tl
         '''
-        if len(self.decel_wps) > 10:
+        if len(self.decel_wps) > 5:
             if self.stopped == False:
                 return self.decel_wps[1:]
         
@@ -342,8 +341,10 @@ class WaypointUpdater(object):
         (endroll, endpitch, end_yaw) = tf.transformations.euler_from_quaternion([end_q.x, end_q.y, end_q.z, end_q.w])
         
         s, d = self.stopPlanner.getFrenet(xyz.x, xyz.y, yaw, self.wps)
-       
-        ss = s + self.distance_to_tl
+
+        dist_to_tl = self.stopPlanner.distance(self.wps, next_pt, next_tl) 
+
+        ss = s + dist_to_tl
         
         if self.current_velocity == 0:
             current_velocity = 1.
@@ -356,14 +357,15 @@ class WaypointUpdater(object):
             #rospy.logwarn("current velocity = 0.")
             #T = np.roots([0.5*MAX_ACCEL, 0.5, -(self.distance_to_tl)])
             #T = T[T>0][0]
-            T = math.sqrt(2. * self.distance_to_tl)
+            T = math.sqrt(2. * dist_to_tl)
             # print("T: %f" % T)
             n = T / dt
-            if n > LOOKAHEAD_WPS:
-                n = LOOKAHEAD_WPS
-                s_x = np.linspace(0, n*dt, n)
-            else:
-                s_x = np.linspace(0, T, n)
+            # if n > (2*LOOKAHEAD_WPS):
+            #     n = 2*LOOKAHEAD_WPS
+            #     s_x = np.linspace(0, n*dt, n)
+            # else:
+            #     s_x = np.linspace(0, T, n)
+            s_x = np.linspace(0,LOOKAHEAD_WPS*dt, LOOKAHEAD_WPS)
             coeff = self.stopPlanner.JMT([s, 1.0, MAX_ACCEL], [ss, 0.0, 0.0], T)
             fy = np.poly1d(coeff)
             sss = fy(s_x)
@@ -388,16 +390,26 @@ class WaypointUpdater(object):
         else:
             #T = np.roots([0.5*MAX_DECEL, self.current_velocity, -(self.distance_to_tl)])
             #T = T[T>0][0]
-            T = math.sqrt(2. * self.distance_to_tl)
+            a = - (self.current_velocity**2) / (2 * dist_to_tl)
+            if abs(a) < MAX_DECEL:
+                a = - MAX_DECEL
+    
+            #T = np.roots([0.5*MAX_DECEL, self.current_velocity, -(distance_to_tl-self.stopped_cb)])
+            #T = T[T>0][0]
+            #T = self.current_velocity / MAX_DECEL
+            T =  -self.current_velocity / a
+            #T = math.sqrt(2. * self.distance_to_tl)
             # print("T: %f" % T)
             n = T / dt
-            if n > LOOKAHEAD_WPS:
-                n = LOOKAHEAD_WPS
-                s_x = np.linspace(0, n*dt, n)
-            else:
-                s_x = np.linspace(0, T, n)
+            rospy.logerr("Number of waypoings in decelerate: %f" % n)
+            # if n > 2*LOOKAHEAD_WPS:
+            #     n = 2*LOOKAHEAD_WPS
+            #     s_x = np.linspace(0, n*dt, n)
+            # else:
+            #     s_x = np.linspace(0, T, n)
+            s_x = np.linspace(0,LOOKAHEAD_WPS*dt, LOOKAHEAD_WPS)
             # print(s, self.current_velocity, MAX_DECEL, ss)
-            coeff = self.stopPlanner.JMT([s, self.current_velocity, -MAX_DECEL], [ss, 0.0, 0.0], T)
+            coeff = self.stopPlanner.JMT([s, self.current_velocity, a], [ss, 0.0, 0.0], T)
             fy = np.poly1d(coeff)
             sss = fy(s_x)
             final_path = []
@@ -410,10 +422,10 @@ class WaypointUpdater(object):
             #px, py = self.stopPlanner.getXY(sss[-1], d, self.stopPlanner.map_s, self.wps)
             #final_path.append([px, py])
             final_path = np.array(final_path)
-            vcoeff = self.stopPlanner.JMT([self.current_velocity,  -MAX_DECEL, 1.0], [0.0, 0.0, 0.0], T)
+            vcoeff = self.stopPlanner.JMT([self.current_velocity, a, -1.0], [0.0, 0.0, 0.0], T)
             fyv = np.poly1d(vcoeff)
             vvv = fyv(s_x)
-            vvv[vvv > self.velocity] = self.velocity
+            vvv[vvv > self.current_velocity] = self.current_velocity
             yawcoeff = self.stopPlanner.JMT([yaw, 0.017453, 1.0], [end_yaw, 0.017453, 1.0], T)
             fyyaw = np.poly1d(yawcoeff)
             yyy = fyyaw(s_x)
@@ -448,7 +460,7 @@ class WaypointUpdater(object):
         the velocity of the car when apporaching a tl
         '''
 
-        if len(self.decel_wps) > 10:
+        if len(self.decel_wps) > 5:
             return self.decel_wps[1:]
             
         
@@ -469,22 +481,24 @@ class WaypointUpdater(object):
         
         dt = 0.03
 
-        a = (self.current_velocity**2 / dist_to_tl) -  (self.current_velocity**2 / (2.*dist_to_tl))
-        a = a * 3.
+        # a = (self.current_velocity**2 / dist_to_tl) -  (self.current_velocity**2 / (2.*dist_to_tl))
+        # a = a * 3.
+        a = (target_velocity**2 - self.current_velocity**2) / (2 * (dist_to_tl - self.stopping_distance))
     
         #T = np.roots([0.5*MAX_DECEL, self.current_velocity, -(distance_to_tl-self.stopped_cb)])
         #T = T[T>0][0]
         #T = self.current_velocity / MAX_DECEL
-        T = self.current_velocity / a
+        T = (target_velocity - self.current_velocity) / a
         # print("T: %f" % T)
         n = T / dt
-        if n > LOOKAHEAD_WPS:
-            n = LOOKAHEAD_WPS
-            s_x = np.linspace(0, n*dt, n)
-        else:
-            s_x = np.linspace(0, T, n)
+        # if n > (2*LOOKAHEAD_WPS):
+        #     n = 2*LOOKAHEAD_WPS
+        #     s_x = np.linspace(0, n*dt, n)
+        # else:
+        #     s_x = np.linspace(0, T, n)
+        s_x = np.linspace(0,LOOKAHEAD_WPS*dt, LOOKAHEAD_WPS)
         # print(s, self.current_velocity, MAX_DECEL, ss)
-        coeff = self.stopPlanner.JMT([s, self.current_velocity, -a], [ss, 0.0, 0.0], T)
+        coeff = self.stopPlanner.JMT([s, self.current_velocity, a], [ss, target_velocity, a], T)
         fy = np.poly1d(coeff)
         sss = fy(s_x)
         final_path = []
@@ -498,11 +512,11 @@ class WaypointUpdater(object):
         #final_path.append([px, py])
         final_path = np.array(final_path)
         #vvv = np.array(vvv) 
-        vcoeff = self.stopPlanner.JMT([self.current_velocity,  -a, 1.0], [0.0, 0.0, 0.0], T)
+        vcoeff = self.stopPlanner.JMT([self.current_velocity, a, 1.0], [target_velocity, a, 1.0], T)
         fyv = np.poly1d(vcoeff)
         vvv = fyv(s_x)
         vvv[vvv > self.velocity] = self.velocity
-        vvv[vvv < 1.0] = 0.0
+        #vvv[vvv < 1.0] = 0.0
         #print(vvv)
         
     
