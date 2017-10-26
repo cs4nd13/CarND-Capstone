@@ -148,7 +148,9 @@ class WaypointUpdater(object):
         # u = 0.70 = friction coefficient
         # t = 4.0 = brake time
         # g = 9.8 = force due to earth gravity
-        self.stopping_distance = (self.velocity * 4.0) + (self.velocity**2 / (2. * 0.70 * 9.8))
+        #self.stopping_distance = (self.velocity * 4.0) + (self.velocity**2 / (2. * 0.70 * 9.8))
+        #self.stopping_distance = (self.velocity**2 / (2. * 0.70 * 9.8))
+        self.stopping_distance = (self.velocity**2 / (2. * MAX_DECEL))
 
 
         ## get stop lines positions from paramenter
@@ -430,9 +432,9 @@ class WaypointUpdater(object):
             yw = math.atan2(final_path[i][1] - cur_y, final_path[i][0] - cur_x)
             cur_x = final_path[i][0]
             cur_y = final_path[i][1]
-            # if yw < 0:
-            #     yw = yw + 2 * np.pi
-            q = tf.transformations.quaternion_from_euler(0.,0.,yyy[i])
+            if yw < 0:
+                yw = yw + 2 * np.pi
+            q = tf.transformations.quaternion_from_euler(0.,0.,yw)
             p.pose.pose.orientation = Quaternion(*q)
             p.twist.twist.linear.x = vvv[i]
             waypoints.append(p)

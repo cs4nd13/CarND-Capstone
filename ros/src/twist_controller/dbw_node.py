@@ -154,9 +154,9 @@ class DBWNode(object):
         e = vtwist - self.velocity_filter.get()
         # feed pid controller with a dt of 0.033
         self.throttle = self.pidv.step(e, 0.03)
-        if self.throttle < -3.0:
-            rospy.logerr("Resetting PID !!!")
-            self.pidv.reset()
+        # if self.throttle < -3.0:
+        #     rospy.logerr("Resetting PID !!!")
+        #     self.pidv.reset()
         self.throttle = self.pidv.step(e, 0.03)
         if msg.header.seq%5 == 0:
             ts = msg.header.stamp.secs + 1.e-9*msg.header.stamp.nsecs
@@ -226,7 +226,7 @@ class DBWNode(object):
                             throttle = 0.
                             #brake = 1.0 * 10
                             v = self.velocity_filter.get()
-                            t = 0.03  # time to brake
+                            t = 0.02  # time to brake
                             u = 0.70  # friction coeficcient
                             g = 9.8  # gravity force 
                             D = (v * t) + (v**2 / (2. * u * 9.8))
@@ -235,12 +235,13 @@ class DBWNode(object):
                             # caculate the force
                             F = w / D
                             brake = (2 * u * F * self.wheel_radius) + self.brake_deadband
+                            #brake *= 2
                     elif self.throttle < 0:
                         throttle = 0
                         #brake = (abs(self.throttle) + self.brake_deadband) #* 10
                         #if brake > 1.: brake = 1. * 1000 
                         v = self.velocity_filter.get()
-                        t = 0.03  # time to brake
+                        t = 0.02  # time to brake
                         u = 0.70  # friction coeficcient
                         g = 9.8  # gravity force 
                         D = (v * t) + (v**2 / (2. * u * 9.8))
@@ -249,6 +250,7 @@ class DBWNode(object):
                         # caculate the force
                         F = w / D
                         brake = (2 * u * F * self.wheel_radius) + self.brake_deadband
+                        #brake *= 2
                     else:
                         throttle = self.throttle + self.brake_deadband
                         if throttle > 1. : throttle = 1.
@@ -271,7 +273,7 @@ class DBWNode(object):
 
                 # throttle is 0.35, which runs the car at about 40 mph.
                 # throttle of 0.98 will run the car at about 115 mph.
-                #rospy.loginfo("[%f] throttle: %f brake: %f steering angle: %f " % (self.throttle, throttle, brake , steer))
+                rospy.loginfo("[%f] throttle: %f brake: %f steering angle: %f " % (self.throttle, throttle, brake , steer))
                 self.publish(throttle, brake, steer)
             else:
                 self.pidv.reset()
