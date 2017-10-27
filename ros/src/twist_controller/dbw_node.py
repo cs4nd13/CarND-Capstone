@@ -226,7 +226,7 @@ class DBWNode(object):
                             throttle = 0.
                             #brake = 1.0 * 10
                             v = self.velocity_filter.get()
-                            t = 0.03  # time to brake
+                            t = 0.02  # time to brake
                             u = 0.70  # friction coeficcient
                             g = 9.8  # gravity force 
                             D = (v * t) + (v**2 / (2. * u * 9.8))
@@ -235,12 +235,13 @@ class DBWNode(object):
                             # caculate the force
                             F = w / D
                             brake = (2 * u * F * self.wheel_radius) + self.brake_deadband
+                            #brake *= 2
                     elif self.throttle < 0:
                         throttle = 0
                         #brake = (abs(self.throttle) + self.brake_deadband) #* 10
                         #if brake > 1.: brake = 1. * 1000 
                         v = self.velocity_filter.get()
-                        t = 0.03  # time to brake
+                        t = 0.02  # time to brake
                         u = 0.70  # friction coeficcient
                         g = 9.8  # gravity force 
                         D = (v * t) + (v**2 / (2. * u * 9.8))
@@ -249,6 +250,7 @@ class DBWNode(object):
                         # caculate the force
                         F = w / D
                         brake = (2 * u * F * self.wheel_radius) + self.brake_deadband
+                        #brake *= 2
                     else:
                         throttle = self.throttle + self.brake_deadband
                         if throttle > 1. : throttle = 1.
