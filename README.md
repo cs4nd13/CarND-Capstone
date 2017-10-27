@@ -61,9 +61,8 @@ git clone https://github.com/seneca-wolf/CarND-Capstone
 
 2. Install python dependencies (Please note: if you do not have ROS installed / experience w/ ROS 
 it may interfere w/ your [e.g. conda] python distributions & environments, which is why Udacity uses 
-a specific preconfigured Virtual Machine for the Capstone project). Also, please note that the setup 
-here (particularly in item 3, below) are different than for the original Udacity repo for this project.
-C.f. the changelog.txt file maintained by Chuck. 
+a specific preconfigured Virtual Machine for the Capstone project). 
+
 ```bash
 cd CarND-Capstone
 pip install -r requirements.txt
@@ -71,9 +70,6 @@ pip install -r requirements.txt
 3. Make and run styx
 ```bash
 cd ros
-cd src 
-catkin_init_workspace
-cd .. 
 catkin_make
 source devel/setup.bash 
 roslaunch launch/styx.launch
