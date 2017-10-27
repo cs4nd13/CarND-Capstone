@@ -154,9 +154,9 @@ class DBWNode(object):
         e = vtwist - self.velocity_filter.get()
         # feed pid controller with a dt of 0.033
         self.throttle = self.pidv.step(e, 0.03)
-        # if self.throttle < -3.0:
-        #     rospy.logerr("Resetting PID !!!")
-        #     self.pidv.reset()
+        if self.throttle < -3.0:
+            rospy.logerr("Resetting PID !!!")
+            self.pidv.reset()
         self.throttle = self.pidv.step(e, 0.03)
         if msg.header.seq%5 == 0:
             ts = msg.header.stamp.secs + 1.e-9*msg.header.stamp.nsecs
@@ -273,7 +273,7 @@ class DBWNode(object):
 
                 # throttle is 0.35, which runs the car at about 40 mph.
                 # throttle of 0.98 will run the car at about 115 mph.
-                rospy.loginfo("[%f] throttle: %f brake: %f steering angle: %f " % (self.throttle, throttle, brake , steer))
+                #rospy.loginfo("[%f] throttle: %f brake: %f steering angle: %f " % (self.throttle, throttle, brake , steer))
                 self.publish(throttle, brake, steer)
             else:
                 self.pidv.reset()
