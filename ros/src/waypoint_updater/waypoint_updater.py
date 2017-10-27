@@ -149,8 +149,7 @@ class WaypointUpdater(object):
         # t = 4.0 = brake time
         # g = 9.8 = force due to earth gravity
         self.stopping_distance = (self.velocity * 4.0) + (self.velocity**2 / (2. * 0.70 * 9.8))
-        #self.stopping_distance = (self.velocity**2 / (2. * MAX_DECEL))
-
+        
 
         ## get stop lines positions from paramenter
         self.stop_lines = yaml.load(rospy.get_param("/traffic_light_config"))['stop_line_positions']
@@ -394,21 +393,14 @@ class WaypointUpdater(object):
             if abs(a) < MAX_DECEL:
                 a = - MAX_DECEL
     
-            #T = np.roots([0.5*MAX_DECEL, self.current_velocity, -(distance_to_tl-self.stopped_cb)])
-            #T = T[T>0][0]
-            #T = self.current_velocity / MAX_DECEL
             T =  self.current_velocity / MAX_DECEL
-            #T = math.sqrt(2. * self.distance_to_tl)
-            # print("T: %f" % T)
             n = T / dt
-            #rospy.logerr("Number of waypoings in decelerate: %f" % n)
             if n > LOOKAHEAD_WPS:
                 n = LOOKAHEAD_WPS
                 s_x = np.linspace(0, n*dt, n)
             else:
                 s_x = np.linspace(0, T, n)
-            #s_x = np.linspace(0,LOOKAHEAD_WPS*dt, LOOKAHEAD_WPS)
-            # print(s, self.current_velocity, MAX_DECEL, ss)
+    
             coeff = self.stopPlanner.JMT([s, self.current_velocity, -MAX_DECEL], [ss, 0.0, 0.0], T)
             fy = np.poly1d(coeff)
             sss = fy(s_x)
@@ -472,34 +464,21 @@ class WaypointUpdater(object):
         (endroll, endpitch, end_yaw) = tf.transformations.euler_from_quaternion([end_q.x, end_q.y, end_q.z, end_q.w])
         
         s, d = self.stopPlanner.getFrenet(xyz.x, xyz.y, yaw, self.wps)
-
-       
-
-        #rospy.loginfo("tl_distance: %d, s: % %f" % self.tl_distance, s)
+      
         dist_to_tl = self.stopPlanner.distance(self.wps, next_pt, next_tl) 
         ss = s + dist_to_tl
         
         dt = 0.03
-
-        # a = (self.current_velocity**2 / dist_to_tl) -  (self.current_velocity**2 / (2.*dist_to_tl))
-        # a = a * 3.
-        #a = -(self.current_velocity**2) / (2 * (dist_to_tl))
-        
-            
-    
-        #T = np.roots([0.5*MAX_DECEL, self.current_velocity, -(distance_to_tl-self.stopped_cb)])
-        #T = T[T>0][0]
+      
         T = self.current_velocity / MAX_DECEL
-        #T = -(self.current_velocity) / a
-        # print("T: %f" % T)
+
         n = T / dt
         if n > (LOOKAHEAD_WPS):
             n = LOOKAHEAD_WPS
             s_x = np.linspace(0, n*dt, n)
         else:
             s_x = np.linspace(0, T, n)
-        #s_x = np.linspace(0,LOOKAHEAD_WPS*dt, LOOKAHEAD_WPS)
-        # print(s, self.current_velocity, MAX_DECEL, ss)
+
         coeff = self.stopPlanner.JMT([s, self.current_velocity, -MAX_DECEL], [ss, 0, 0], T)
         fy = np.poly1d(coeff)
         sss = fy(s_x)
