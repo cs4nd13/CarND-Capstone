@@ -143,7 +143,7 @@ class WaypointUpdater(object):
         self.accel_wps = []
         self.decel_wps = []
 
-        self.velocity = rospy.get_param('velocity') * 1000. / (60. * 60.)
+        self.velocity = rospy.get_param('velocity', 10) * 1000. / (60. * 60.)
         ## calculate stopping distance based on allowed max velocity
         # u = 0.70 = friction coefficient
         # t = 4.0 = brake time
