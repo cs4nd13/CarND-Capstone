@@ -1,5 +1,7 @@
 <?xml version="1.0"?>
 <launch>
+    <!--Traffic Light Locations and Camera Config -->
+    <param name="traffic_light_config" textfile="$(find tl_detector)/sim_traffic_light_config.yaml" />
     <!-- Simulator Bridge -->
     <include file="$(find styx)/launch/server.launch" />
 
@@ -18,6 +20,4 @@
     <!--Traffic Light Detector Node -->
     <include file="$(find tl_detector)/launch/tl_detector.launch"/>
 
-    <!--Traffic Light Locations and Camera Config -->
-    <param name="traffic_light_config" textfile="$(find tl_detector)/sim_traffic_light_config.yaml" />
-</launch>
+    </launch>
